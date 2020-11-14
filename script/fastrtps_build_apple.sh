@@ -3,13 +3,18 @@
 # fastrtps_build_apple.sh
 # Copyright © 2020 Dmitriy Borovikov. All rights reserved.
 #
-set -e
-set -x
+
+buildLibrary () {
+local BUILT_PRODUCTS_DIR=$1
+export PLATFORM_NAME=$2
+export EFFECTIVE_PLATFORM_NAME=$3
+export ARCHS=$4
+
 echo $PLATFORM_NAME$EFFECTIVE_PLATFORM_NAME $ARCHS
 
 if [ -f "$BUILT_PRODUCTS_DIR/lib/libfastrtpsa.a" ]; then
 echo Already build "$BUILT_PRODUCTS_DIR/lib/libfastrtpsa.a"
-exit 0
+return
 fi
 #export CMAKE_BUILD_PARALLEL_LEVEL=$(sysctl hw.ncpu | awk '{print $2}')
 
@@ -37,6 +42,8 @@ cmake -S$SOURCE_DIR/Fast-DDS -B"$PROJECT_TEMP_DIR/Fast-DDS" \
 -D SQLITE3_SUPPORT=OFF \
 -D THIRDPARTY=ON \
 -D COMPILE_EXAMPLES=OFF \
+-D COMPILE_TOOLS=OFF \
+-D SHM_TRANSPORT_DEFAULT=OFF \
 -D BUILD_DOCUMENTATION=OFF \
 -D BUILD_SHARED_LIBS=OFF \
 -D CMAKE_OSX_DEPLOYMENT_TARGET="10.15" \
@@ -65,6 +72,8 @@ cmake -S$SOURCE_DIR/Fast-DDS -B"$PROJECT_TEMP_DIR/Fast-DDS" \
 -D SQLITE3_SUPPORT=OFF \
 -D THIRDPARTY=ON \
 -D COMPILE_EXAMPLES=OFF \
+-D COMPILE_TOOLS=OFF \
+-D SHM_TRANSPORT_DEFAULT=OFF \
 -D BUILD_DOCUMENTATION=OFF \
 -D BUILD_SHARED_LIBS=OFF \
 -D CMAKE_OSX_DEPLOYMENT_TARGET="10.10" \
@@ -106,6 +115,8 @@ cmake -S$SOURCE_DIR/Fast-DDS -B"$PROJECT_TEMP_DIR/Fast-DDS" \
 -D SQLITE3_SUPPORT=OFF \
 -D THIRDPARTY=ON \
 -D COMPILE_EXAMPLES=OFF \
+-D COMPILE_TOOLS=OFF \
+-D SHM_TRANSPORT_DEFAULT=OFF \
 -D BUILD_DOCUMENTATION=OFF \
 -G Xcode
 
@@ -113,5 +124,7 @@ cmake --build "$PROJECT_TEMP_DIR/Fast-DDS" --config Release --target install --
 fi
 rm -rf "$PROJECT_TEMP_DIR"
 
-cd "$BUILT_PRODUCTS_DIR/lib"
-libtool -static -o libfastrtpsa.a libfastrtps.a libfastcdr.a libfoonathan_memory-0.6.2.a
+pushd "$BUILT_PRODUCTS_DIR/lib" > /dev/null
+libtool -static -D -o libfastrtpsa.a libfastrtps.a libfastcdr.a libfoonathan_memory-0.6.2.a
+popd > /dev/null
+}

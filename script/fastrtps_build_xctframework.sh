@@ -6,18 +6,26 @@
 set -e
 set -x
 
-TAG="2.0.1"
+if [[ $# > 0 ]]; then
+TAG=$1
+else
+echo "Usage: fastrtps_build_xctframework.sh TAG"
+echo "where TAG is FasT-DDS version tag eg. 2.0.1"
+exit -1
+fi
+
 BRANCH=$(git branch --show-current)
 if [ "$BRANCH" == "master" ]
 then
     Foonathan_memory_repo="-b crosscompile https://github.com/DimaRU/memory.git"
-    FastRTPS_repo="-b v2.0.1 https://github.com/eProsima/Fast-DDS.git"
-
+    FastRTPS_repo="-b v$TAG https://github.com/eProsima/Fast-DDS.git"
+    ReleaseNote="Fast-DDS $TAG: iOS(armv7, armv7s, arm64), iOS Simulator(x86_64, arm64), macOS(x86_64, arm64), maccatalyst (x86_64, arm64)."
 elif [ "$BRANCH" == "whitelist" ]
 then
-	TAG="$BRANCH-$TAG"
     Foonathan_memory_repo="-b crosscompile https://github.com/DimaRU/memory.git"
-    FastRTPS_repo="-b feature/remote-whitelist-2.0.1 https://github.com/DimaRU/Fast-DDS.git"
+    FastRTPS_repo="-b feature/remote-whitelist-$TAG https://github.com/DimaRU/Fast-DDS.git"
+    ReleaseNote="Fast-DDS $TAG: iOS(armv7, armv7s, arm64), iOS Simulator(x86_64, arm64), macOS(x86_64, arm64), maccatalyst (x86_64, arm64). Remote whitelist feature."
+    TAG="$TAG-$BRANCH"
 else
     echo "Wrong branch $BRANCH"
     exit -1
@@ -42,29 +50,16 @@ if [ ! -d $SOURCE_DIR/Fast-DDS ]; then
 git clone --quiet --recurse-submodules --depth 1 $FastRTPS_repo $SOURCE_DIR/Fast-DDS
 fi
 
-export BUILT_PRODUCTS_DIR=$BUILD/macosx
-export PLATFORM_NAME=macosx
-export EFFECTIVE_PLATFORM_NAME=""
-export ARCHS="x86_64 arm64"
-script/fastrtps_build_apple.sh
+source script/fastrtps_build_apple.sh
 
-export BUILT_PRODUCTS_DIR=$BUILD/maccatalyst
-export PLATFORM_NAME=macosx
-export EFFECTIVE_PLATFORM_NAME="-maccatalyst"
-export ARCHS="x86_64 arm64"
-script/fastrtps_build_apple.sh
-
-export BUILT_PRODUCTS_DIR=$BUILD/iphoneos
-export PLATFORM_NAME=iphoneos
-export EFFECTIVE_PLATFORM_NAME="-iphoneos"
-export ARCHS="armv7 armv7s arm64"
-script/fastrtps_build_apple.sh
-
-export BUILT_PRODUCTS_DIR=$BUILD/iphonesimulator
-export PLATFORM_NAME=iphonesimulator
-export EFFECTIVE_PLATFORM_NAME="-iphonesimulator"
-export ARCHS="x86_64 arm64"
-script/fastrtps_build_apple.sh
+# BUILT_PRODUCTS_DIR=$BUILD/macosx
+# PLATFORM_NAME=macosx
+# EFFECTIVE_PLATFORM_NAME=""
+# ARCHS="x86_64 arm64"
+buildLibrary "$BUILD/macosx" "macosx" "" "x86_64 arm64"
+buildLibrary "$BUILD/maccatalyst" "macosx" "-maccatalyst" "x86_64 arm64"
+buildLibrary "$BUILD/iphoneos" "iphoneos" "" "armv7 armv7s arm64"
+buildLibrary "$BUILD/iphonesimulator" "iphonesimulator" "-iphonesimulator" "x86_64 arm64"
 
 xcodebuild -create-xcframework \
 -library $BUILD/macosx/lib/libfastrtpsa.a \
@@ -76,7 +71,7 @@ xcodebuild -create-xcframework \
 -library $BUILD/maccatalyst/lib/libfastrtpsa.a \
 -headers $BUILD/maccatalyst/include \
 -output FastDDS.xcframework
-zip --recurse-paths --quiet $ZIPNAME FastDDS.xcframework
+zip --recurse-paths -X --quiet $ZIPNAME FastDDS.xcframework
 rm -rf FastDDS.xcframework
 
 CHECKSUM=`shasum -a 256 -b $ZIPNAME | awk '{print $1}'`
@@ -99,4 +94,14 @@ let package = Package(
 )
 EOL
 
+if [[ $# == 1 ]]; then
+
+git add Package.swift
+git commit -m "Build $TAG"
+git tag $TAG
+git push
+git push --tags
+gh release create "$TAG" fastrtps-$TAG.xcframework.zip --title "$TAG" --notes "$ReleaseNote"
+
+fi
 popd > /dev/null
