@@ -9,7 +9,7 @@ set -x
 if [[ $# > 0 ]]; then
 TAG=$1
 else
-echo "Usage: fastrtps_build_xctframework.sh TAG"
+echo "Usage: fastrtps_build_xctframework.sh TAG commit"
 echo "where TAG is FasT-DDS version tag eg. 2.0.1"
 exit -1
 fi
@@ -17,12 +17,10 @@ fi
 BRANCH=$(git branch --show-current)
 if [ "$BRANCH" == "master" ]
 then
-    Foonathan_memory_repo="-b crosscompile https://github.com/DimaRU/memory.git"
     FastRTPS_repo="-b v$TAG https://github.com/eProsima/Fast-DDS.git"
     ReleaseNote="Fast-DDS $TAG: iOS(armv7, armv7s, arm64), iOS Simulator(x86_64, arm64), macOS(x86_64, arm64), maccatalyst (x86_64, arm64)."
 elif [ "$BRANCH" == "whitelist" ]
 then
-    Foonathan_memory_repo="-b crosscompile https://github.com/DimaRU/memory.git"
     FastRTPS_repo="-b feature/remote-whitelist-$TAG https://github.com/DimaRU/Fast-DDS.git"
     ReleaseNote="Fast-DDS $TAG: iOS(armv7, armv7s, arm64), iOS Simulator(x86_64, arm64), macOS(x86_64, arm64), maccatalyst (x86_64, arm64). Remote whitelist feature."
     TAG="$TAG-$BRANCH"
@@ -44,7 +42,10 @@ export PROJECT_TEMP_DIR=$BUILD/temp
 export SOURCE_DIR=$BUILD/src
 
 if [ ! -d $SOURCE_DIR/memory ]; then
-git clone --quiet --recurse-submodules --depth 1 $Foonathan_memory_repo $SOURCE_DIR/memory
+git clone --quiet https://github.com/foonathan/memory.git $SOURCE_DIR/memory
+pushd $SOURCE_DIR/memory > /dev/null
+git checkout 7851d12
+popd > /dev/null
 fi
 if [ ! -d $SOURCE_DIR/Fast-DDS ]; then
 git clone --quiet --recurse-submodules --depth 1 $FastRTPS_repo $SOURCE_DIR/Fast-DDS
@@ -94,14 +95,14 @@ let package = Package(
 )
 EOL
 
-if [[ $# == 1 ]]; then
+if [[ $2 == "commit" ]]; then
 
 git add Package.swift
 git commit -m "Build $TAG"
 git tag $TAG
 git push
 git push --tags
-gh release create "$TAG" fastrtps-$TAG.xcframework.zip --title "$TAG" --notes "$ReleaseNote"
+gh release create "$TAG" $ZIPNAME --title "$TAG" --notes "$ReleaseNote"
 
 fi
 popd > /dev/null
