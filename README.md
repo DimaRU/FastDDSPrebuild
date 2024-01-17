@@ -6,7 +6,7 @@
 | Platform          |  Architectures     |
 |-------------------|--------------------|
 | macOS             | x86_64 arm64       |
-| iOS               | arm64 armv7 armv7s |
+| iOS               | arm64              |
 | iOS Simulator     | x86_64 arm64       |
 | Mac Catalyst      | x86_64 arm64       |
 | xrOS              | arm64              |
@@ -20,7 +20,7 @@ Add line to you package.swift dependencies:
 .package(url: "https://github.com/DimaRU/FastDDSPrebuild.git", from: "2.0.0")
 ```
 
-Right now used with the FastRTPSBridge library: [https://github.com/DimaRU/FastRTPSBridge](https://github.com/DimaRU/FastRTPSBridge)
+Right now used with the FastRTPSSwift library: [https://github.com/DimaRU/FastRTPSSwift](https://github.com/DimaRU/FastRTPSSwift)
 
 ### Xcode 12 bug note!
 
@@ -50,4 +50,4 @@ rm -f ${CODESIGNING_FOLDER_PATH}/Contents/Frameworks/*.a
 4. Clone this repo
 5. Checkout *script* branch `git switch script`
 6. Make your own repo
-5. Run `./script/fastrtps_build_xctframework.sh repo_path v2.6.1 commit`
+5. Run `./script/fastrtps_build_xctframework.sh repo_path v2.6.7 commit`
