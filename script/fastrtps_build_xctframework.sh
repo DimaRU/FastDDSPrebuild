@@ -182,7 +182,7 @@ fi
 
 git add Package.swift
 git commit -m "Build $TAG"
-git tag $TAG
+git tag -a $TAG -m "$TAG"
 git push
 git push --tags
 gh release create "$TAG" $BUILD/$ZIPNAME --title "$TAG" --notes-file $BUILD/release-note.md
